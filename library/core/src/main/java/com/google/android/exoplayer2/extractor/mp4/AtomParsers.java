@@ -178,7 +178,13 @@ import java.util.List;
     stts.setPosition(Atom.FULL_HEADER_SIZE);
     int remainingTimestampDeltaChanges = stts.readUnsignedIntToInt() - 1;
     int remainingSamplesAtTimestampDelta = stts.readUnsignedIntToInt();
-    int timestampDeltaInTimeUnits = stts.readUnsignedIntToInt();
+    // The BMFF spec (ISO 14496-12) states that sample deltas should be unsigned integers
+    // in stts boxes, however some streams violate the spec and use signed integers instead.
+    // See https://github.com/google/ExoPlayer/issues/3384. It's safe to always decode sample
+    // deltas as signed integers here, because unsigned integers will still be parsed
+    // correctly (unless their top bit is set, which is never true in practice because sample
+    // deltas are always small).
+    timestampDeltaInTimeUnits = stts.readInt();
 
     // Prepare to read sample timestamp offsets, if ctts is present.
     int remainingSamplesAtTimestampOffset = 0;
